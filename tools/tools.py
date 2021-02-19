@@ -243,22 +243,6 @@ class Tools(commands.Cog):
 
     @commands.guild_only()
     @commands.command()
-    async def einfo(self, ctx, emoji: discord.Emoji):
-        """Emoji information."""
-        e = emoji
-        m = (
-            f"{str(e)}\n"
-            f"```ini\n"
-            f"[NAME]:       {e.name}\n"
-            f"[GUILD]:      {e.guild}\n"
-            f"[URL]:        {e.url}\n"
-            f"[ANIMATED]:   {e.animated}"
-            "```"
-        )
-        await ctx.send(m)
-
-    @commands.guild_only()
-    @commands.command()
     @checks.mod_or_permissions(manage_guild=True)
     async def inrole(self, ctx, *, rolename):
         """Check members in the role specified."""
@@ -758,8 +742,6 @@ class Tools(commands.Cog):
             await ctx.invoke(self.uinfo, it_is)
         elif isinstance(it_is, discord.Role):
             await ctx.invoke(self.rinfo, rolename=it_is)
-        elif isinstance(it_is, discord.Emoji):
-            await ctx.invoke(self.einfo, it_is)
         else:
             await ctx.send("I could not find anything for this ID.")
 
