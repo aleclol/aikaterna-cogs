@@ -395,7 +395,7 @@ class Away(commands.Cog):
                             await message.channel.send(msg, delete_after=delete_after)
                             break
 
-    @commands.command(name="away", aliases=["afk)
+    @commands.command(name="away", aliases=["afk"])
     async def away_(self, ctx, delete_after: Optional[int] = None, *, message: str = None):
         """
         Tell the bot you're away or back.
