@@ -506,7 +506,7 @@ class Tools(commands.Cog):
         await ctx.send(f"**{rolename} ID:** {role.id}")
                  
     @commands.guild_only()
-    @commands.command(hidden=true)
+    @commands.command(hidden=True)
     async def rinfobutitdoesntactuallyexistunlessuknowitdoes(self, ctx, *, rolename: discord.Role):
         """Shows role info."""
         channel = ctx.channel
@@ -633,7 +633,7 @@ class Tools(commands.Cog):
         await ctx.send("**{0.name} ID:** {0.id}".format(ctx.guild))
 
     @commands.guild_only()
-    @commands.command(hidden=true)
+    @commands.command(hidden=True)
     async def sinfobutitdoesntactuallyexistunlessuknowitdoes(self, ctx, guild=None):
         """Shows server information."""
         if guild is None:
