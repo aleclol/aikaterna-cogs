@@ -191,7 +191,10 @@ class Tools(commands.Cog):
     @commands.guild_only()
     @commands.command(aliases=["cinfo","channelinfo"])
     async def chinfo(self, ctx, channel: int = None):
-        """Shows channel information. Defaults to current text channel."""
+        """
+        Shows channel information. 
+        Defaults to current text channel.
+        """
         if channel is None:
             channel = ctx.channel
         else:
