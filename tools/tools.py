@@ -669,6 +669,7 @@ class Tools(commands.Cog):
         await waiting.edit(content=data)
 
     @commands.guild_only()
+    @commands.command()
     async def uinfobutitdoesntactuallyexistunlessuknowitdoes(self, ctx, user: discord.Member = None):
         """Shows user information. Defaults to author."""
         if user is None:
