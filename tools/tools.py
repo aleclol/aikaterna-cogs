@@ -505,85 +505,85 @@ class Tools(commands.Cog):
             return
         await ctx.send(f"**{rolename} ID:** {role.id}")
                  
-     @commands.guild_only()
-     @commands.command(hidden=true)
-     async def rinfobutitdoesntactuallyexistunlessuknowitdoes(self, ctx, *, rolename: discord.Role):
-         """Shows role info."""
-         channel = ctx.channel
-         guild = ctx.guild
-         await ctx.trigger_typing()
+    @commands.guild_only()
+    @commands.command(hidden=true)
+    async def rinfobutitdoesntactuallyexistunlessuknowitdoes(self, ctx, *, rolename: discord.Role):
+        """Shows role info."""
+        channel = ctx.channel
+        guild = ctx.guild
+        await ctx.trigger_typing()
 
-         try:
-             caller = inspect.currentframe().f_back.f_code.co_name
-         except:
-             pass
+        try:
+            caller = inspect.currentframe().f_back.f_code.co_name
+        except:
+            pass
 
-         if not isinstance(rolename, discord.Role):
-             role = self._role_from_string(guild, rolename, guild.roles)
-         else:
-             role = rolename
-         if role is None:
-             await ctx.send("That role cannot be found.")
-             return
-         if role is not None:
-             perms = iter(role.permissions)
-             perms_we_have = ""
-             perms_we_dont = ""
-             for x in sorted(perms):
-                 if "True" in str(x):
-                     perms_we_have += "{0}\n".format(str(x).split("'")[1])
-                 else:
-                     perms_we_dont += "{0}\n".format(str(x).split("'")[1])
-             if perms_we_have == "":
-                 perms_we_have = "None"
-             if perms_we_dont == "":
-                 perms_we_dont = "None"
-             msg = discord.Embed(description="Gathering role stats...", colour=role.color)
-             if role.color is None:
-                 role.color = discord.Colour(value=0x000000)
-             loadingmsg = await ctx.send(embed=msg)
-             em = discord.Embed(colour=role.colour)
-             if caller == "invoke":
-                 em.add_field(name="Server", value=role.guild.name)
-             em.add_field(name="Role Name", value=role.name)
-             em.add_field(name="Created", value=self._dynamic_time(role.created_at))
-             em.add_field(name="Users in Role", value=len([m for m in guild.members if role in m.roles]))
-             em.add_field(name="ID", value=role.id)
-             em.add_field(name="Color", value=role.color)
-             em.add_field(name="Position", value=role.position)
-             em.add_field(name="Valid Permissions", value="{}".format(perms_we_have))
-             em.add_field(name="Invalid Permissions", value="{}".format(perms_we_dont))
-             em.set_thumbnail(url=role.guild.icon_url)
-         try:
-             await loadingmsg.edit(embed=em)
-         except discord.HTTPException:
-             permss = "```diff\n"
-             role = self._role_from_string(guild, rolename, guild.roles)
-             if role is None:
-                 await ctx.send("That role cannot be found.")
-                 return
-             if role is not None:
-                 perms = iter(role.permissions)
-                 perms_we_have2 = ""
-                 perms_we_dont2 = ""
-                 for x in sorted(perms):
-                     if "True" in str(x):
-                         perms_we_have2 += "+{0}\n".format(str(x).split("'")[1])
-                     else:
-                         perms_we_dont2 += "-{0}\n".format(str(x).split("'")[1])
-             await ctx.send(
-                 "{}Name: {}\nCreated: {}\nUsers in Role : {}\nId : {}\nColor : {}\nPosition : {}\nValid Perms : \n{}\nInvalid Perms : \n{}```".format(
-                     permss,
-                     role.name,
-                     self._dynamic_time(role.created_at),
-                     len([m for m in guild.members if role in m.roles]),
-                     role.id,
-                     role.color,
-                     role.position,
-                     perms_we_have2,
-                     perms_we_dont2,
-                 )
-             )
+        if not isinstance(rolename, discord.Role):
+            role = self._role_from_string(guild, rolename, guild.roles)
+        else:
+            role = rolename
+        if role is None:
+            await ctx.send("That role cannot be found.")
+            return
+        if role is not None:
+            perms = iter(role.permissions)
+            perms_we_have = ""
+            perms_we_dont = ""
+            for x in sorted(perms):
+                if "True" in str(x):
+                    perms_we_have += "{0}\n".format(str(x).split("'")[1])
+                else:
+                    perms_we_dont += "{0}\n".format(str(x).split("'")[1])
+            if perms_we_have == "":
+                perms_we_have = "None"
+            if perms_we_dont == "":
+                perms_we_dont = "None"
+            msg = discord.Embed(description="Gathering role stats...", colour=role.color)
+            if role.color is None:
+                role.color = discord.Colour(value=0x000000)
+            loadingmsg = await ctx.send(embed=msg)
+            em = discord.Embed(colour=role.colour)
+            if caller == "invoke":
+                em.add_field(name="Server", value=role.guild.name)
+            em.add_field(name="Role Name", value=role.name)
+            em.add_field(name="Created", value=self._dynamic_time(role.created_at))
+            em.add_field(name="Users in Role", value=len([m for m in guild.members if role in m.roles]))
+            em.add_field(name="ID", value=role.id)
+            em.add_field(name="Color", value=role.color)
+            em.add_field(name="Position", value=role.position)
+            em.add_field(name="Valid Permissions", value="{}".format(perms_we_have))
+            em.add_field(name="Invalid Permissions", value="{}".format(perms_we_dont))
+            em.set_thumbnail(url=role.guild.icon_url)
+        try:
+            await loadingmsg.edit(embed=em)
+        except discord.HTTPException:
+            permss = "```diff\n"
+            role = self._role_from_string(guild, rolename, guild.roles)
+            if role is None:
+                await ctx.send("That role cannot be found.")
+                return
+            if role is not None:
+                perms = iter(role.permissions)
+                perms_we_have2 = ""
+                perms_we_dont2 = ""
+                for x in sorted(perms):
+                    if "True" in str(x):
+                        perms_we_have2 += "+{0}\n".format(str(x).split("'")[1])
+                    else:
+                        perms_we_dont2 += "-{0}\n".format(str(x).split("'")[1])
+            await ctx.send(
+                "{}Name: {}\nCreated: {}\nUsers in Role : {}\nId : {}\nColor : {}\nPosition : {}\nValid Perms : \n{}\nInvalid Perms : \n{}```".format(
+                    permss,
+                    role.name,
+                    self._dynamic_time(role.created_at),
+                    len([m for m in guild.members if role in m.roles]),
+                    role.id,
+                    role.color,
+                    role.position,
+                    perms_we_have2,
+                    perms_we_dont2,
+                )
+            )
 
     @commands.guild_only()
     @commands.command(aliases=["listroles"])
