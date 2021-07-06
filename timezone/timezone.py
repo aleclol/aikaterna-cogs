@@ -67,15 +67,18 @@ class Timezone(commands.Cog):
             return None
 
     @commands.guild_only()
-    @commands.group()
-    async def time(self, ctx):
+    @commands.group(invoke_without_command=True)
+    async def time(self, ctx, *, timezone_name=None):
         """
         Checks the time.
 
         For the list of supported timezones, see here:
         https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
         """
-        pass
+        if ctx.invoked_subcommand is None:
+            if await self.me.can_run(ctx):
+                await ctx.invoke(self.me, timezone_name)
+                return
 
     @time.command()
     async def tz(self, ctx, *, timezone_name: Optional[str] = None):
@@ -162,21 +165,18 @@ class Timezone(commands.Cog):
                 await ctx.send(f"Successfully set {user.name}'s timezone to **{tz_resp[0][0]}**.")
 
     @time.command()
-    async def user(self, ctx, user: discord.Member = None):
+    async def user(self, ctx, user: discord.Member):
         """Shows the current time for the specified user."""
-        if not user:
-            await ctx.send("That isn't a user!")
+        usertime, tz = await self.get_usertime(user)
+        if usertime:
+            time = datetime.now(tz)
+            fmt = "**%H:%M** %d-%B-%Y **%Z (UTC %z)**"
+            time = time.strftime(fmt)
+            await ctx.send(
+                f"{user.name}'s current timezone is: **{usertime}**\n" f"The current time is: {str(time)}"
+            )
         else:
-            usertime, tz = await self.get_usertime(user)
-            if usertime:
-                time = datetime.now(tz)
-                fmt = "**%H:%M** %d-%B-%Y **%Z (UTC %z)**"
-                time = time.strftime(fmt)
-                await ctx.send(
-                    f"{user.name}'s current timezone is: **{usertime}**\n" f"The current time is: {str(time)}"
-                )
-            else:
-                await ctx.send("That user hasn't set their timezone.")
+            await ctx.send("That user hasn't set their timezone.")
 
     @time.command()
     async def compare(self, ctx, user: discord.Member = None):
