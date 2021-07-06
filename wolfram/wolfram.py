@@ -52,7 +52,7 @@ class Wolfram(commands.Cog):
 
         await ctx.send(box(message))
 
-    @commands.command(name="wolframimage")
+    @commands.command(name="wolframimage", aliases=["askimage"])
     async def _image(self, ctx, *arguments: str):
         """Ask Wolfram Alpha any question. Returns an image."""
         if not arguments:
@@ -83,7 +83,7 @@ class Wolfram(commands.Cog):
                 except Exception as e:
                     await ctx.send(f"Oops, there was a problem: {e}")
 
-    @commands.command(name="wolframsolve")
+    @commands.command(name="wolframsolve", aliases=['calc', 'math', 'calculate'])
     async def _solve(self, ctx, *, query: str):
         """Ask Wolfram Alpha any math question. Returns step by step answers."""
         api_key = await self.config.WOLFRAM_API_KEY()
