@@ -129,7 +129,6 @@ class Timezone(commands.Cog):
         """
         Sets your timezone.
         Usage: [p]time me Continent/City
-        Using the command with no timezone will show your current timezone, if any.
         """
         tz_results = self.fuzzy_timezone_search(timezone_name)
         tz_resp = await self.format_results(ctx, tz_results)
