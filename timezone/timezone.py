@@ -77,7 +77,7 @@ class Timezone(commands.Cog):
         """
         if ctx.invoked_subcommand is None:
             if await self.me.can_run(ctx):
-                await ctx.invoke(self.me, *, timezone_name)
+                await ctx.invoke(self.me, timezone_name)
                 return
 
     @time.command()
