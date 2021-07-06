@@ -68,7 +68,7 @@ class Timezone(commands.Cog):
 
     @commands.guild_only()
     @commands.group(invoke_without_command=True)
-    async def time(self, ctx, *, timezone_name=None):
+    async def time(self, ctx):
         """
         Checks the time.
 
@@ -76,10 +76,18 @@ class Timezone(commands.Cog):
         https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
         """
         if ctx.invoked_subcommand is None:
-            if await self.me.can_run(ctx):
-                await self.me(ctx)
-                return
-
+            usertime, timezone_name = await self.get_usertime(ctx.author)
+            if not usertime:
+                await ctx.send(
+                    f"You haven't set your timezone. Do `{ctx.prefix}time me Continent/City`: "
+                    "see <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>"
+                )
+            else:
+                time = datetime.now(timezone_name)
+                time = time.strftime("**%H:%M** %d-%B-%Y **%Z (UTC %z)**")
+                msg = f"Your current timezone is **{usertime}.**\n" f"The current time is: {time}"
+                await ctx.send(msg)
+            
     @time.command()
     async def tz(self, ctx, *, timezone_name: Optional[str] = None):
         """Gets the time in any timezone."""
@@ -117,30 +125,17 @@ class Timezone(commands.Cog):
                 )
 
     @time.command()
-    async def me(self, ctx, *, timezone_name=None):
+    async def me(self, ctx, *, timezone_name):
         """
         Sets your timezone.
         Usage: [p]time me Continent/City
         Using the command with no timezone will show your current timezone, if any.
         """
-        if timezone_name is None:
-            usertime, timezone_name = await self.get_usertime(ctx.author)
-            if not usertime:
-                await ctx.send(
-                    f"You haven't set your timezone. Do `{ctx.prefix}time me Continent/City`: "
-                    "see <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>"
-                )
-            else:
-                time = datetime.now(timezone_name)
-                time = time.strftime("**%H:%M** %d-%B-%Y **%Z (UTC %z)**")
-                msg = f"Your current timezone is **{usertime}.**\n" f"The current time is: {time}"
-                await ctx.send(msg)
-        else:
-            tz_results = self.fuzzy_timezone_search(timezone_name)
-            tz_resp = await self.format_results(ctx, tz_results)
-            if tz_resp:
-                await self.config.user(ctx.author).usertime.set(tz_resp[0][0])
-                await ctx.send(f"Successfully set your timezone to **{tz_resp[0][0]}**.")
+        tz_results = self.fuzzy_timezone_search(timezone_name)
+        tz_resp = await self.format_results(ctx, tz_results)
+        if tz_resp:
+            await self.config.user(ctx.author).usertime.set(tz_resp[0][0])
+            await ctx.send(f"Successfully set your timezone to **{tz_resp[0][0]}**.")
 
     @time.command()
     @commands.is_owner()
