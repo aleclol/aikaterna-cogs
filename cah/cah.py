@@ -1416,7 +1416,7 @@ class CardsAgainstHumanity(commands.Cog):
             # It was not - just incorporate new players
             await self.checkSubmissions(ctx, userGame)
             # Reset judging flag to retrigger actions
-            game["Judging"] = False
+            userGame["Judging"] = False
             for bot in newBots:
                 # Schedule stuff
                 task = asyncio.ensure_future(self.botPick(ctx, bot, userGame))
