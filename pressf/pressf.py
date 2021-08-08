@@ -38,10 +38,14 @@ class PressF(commands.Cog):
                 return await ctx.send("You took too long to reply.")
 
             answer = pressf.content[:1900]
+            
         message = await ctx.send(
             f"Everyone, let's pay respects to **{filter_mass_mentions(answer)}**! Press the f reaction on this message to pay respects."
         )
-        await message.add_reaction("\U0001f1eb")
+        try:
+            await message.add_reaction("\U0001f1eb")
+        except discord.NotFound:
+            return
         self.channels[str(ctx.channel.id)] = {"msg_id": message.id, "reacted": []}
         await asyncio.sleep(120)
         try:
@@ -50,7 +54,8 @@ class PressF(commands.Cog):
             pass
         amount = len(self.channels[str(ctx.channel.id)]["reacted"])
         word = "person has" if amount == 1 else "people have"
-        await ctx.send(f"**{amount}** {word} paid respects to **{filter_mass_mentions(answer)}**.")
+        with contextlib.supress(discord.NotFound):
+            await ctx.send(f"**{amount}** {word} paid respects to **{filter_mass_mentions(answer)}**.")
         del self.channels[str(ctx.channel.id)]
 
     @commands.Cog.listener()
