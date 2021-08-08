@@ -38,7 +38,6 @@ class PressF(commands.Cog):
                 return await ctx.send("You took too long to reply.")
 
             answer = pressf.content[:1900]
-
         message = await ctx.send(
             f"Everyone, let's pay respects to **{filter_mass_mentions(answer)}**! Press the f reaction on this message to pay respects."
         )
