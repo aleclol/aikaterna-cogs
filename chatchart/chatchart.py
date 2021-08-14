@@ -76,6 +76,8 @@ class Chatchart(commands.Cog):
             key=lambda x: x[1],
         )
         others = 100 - sum(x[1] for x in top_twenty)
+        if others < 0:
+            others = 0
         return top_twenty, others
 
     @staticmethod
@@ -216,7 +218,6 @@ class Chatchart(commands.Cog):
                 pass
             return await ctx.send(f"Only bots have sent messages in {channel.mention} or I can't read message history.")
         top_twenty, others = self.calculate_top(msg_data)
-        await ctx.send_interactive(top_twenty)
         chart = await self.create_chart(top_twenty, others, channel)
 
         try:
