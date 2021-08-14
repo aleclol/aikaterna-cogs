@@ -75,6 +75,7 @@ class Chatchart(commands.Cog):
             ],
             key=lambda x: x[1],
         )
+        print(top_twenty)
         others = 100 - sum(x[1] for x in top_twenty)
         return top_twenty, others
 
