@@ -56,7 +56,7 @@ class Away(commands.Cog):
         msg += " `{:.7}`/`{:.7}`".format(str(elapsed_time), str(total_time))
         return msg
 
-    async def make_embed_message(self, author, message, state=None):
+    async def make_embed_message(self, author, message, state="away"):
         """
             Makes the embed reply
         """
@@ -152,9 +152,6 @@ class Away(commands.Cog):
             em.set_author(
                 name=f"{author.display_name} is currently streaming {activity[0].name}", icon_url=avatar,
             )
-        else:
-            em = discord.Embed(color=color)
-            em.set_author(name="{} is currently away".format(author.display_name), icon_url=avatar)
         if link and state not in ["listening", "listeningcustom", "gaming"]:
             em.set_image(url=link.group(0))
         return em
@@ -170,7 +167,7 @@ class Away(commands.Cog):
                 message = re.sub(match.re, "@" + user.name, message)
         return message
 
-    async def make_text_message(self, author, message, state=None):
+    async def make_text_message(self, author, message, state="away"):
         """
             Makes the message to display if embeds aren't available
         """
@@ -203,8 +200,7 @@ class Away(commands.Cog):
         elif state == "streamingcustom":
             status = [c for c in author.activities if c.type == discord.ActivityType.streaming]
             msg = f"{author.display_name} is currently streaming at {status[0].url}"
-        else:
-            msg = f"{author.display_name} is currently away"
+
 
         if message != " " and state != "listeningcustom":
             msg += f" and has set the following message: `{message}`"
@@ -232,16 +228,32 @@ class Away(commands.Cog):
             return
         if not message.channel.permissions_for(guild.me).send_messages:
             return
+        if await self.bot.allowed_by_whitelist_blacklist(who=message.author) is False:
+            return
 
         blocked_guilds = await self.config.ign_servers()
         guild_config = await self.config.guild(guild).all()
         for author in message.mentions:
-            if (guild.id in blocked_guilds and not await self.is_mod_or_admin(author)) or author.id in guild_config["BLACKLISTED_MEMBERS"]:
+            if (self.bot.allowed_by_whitelist_blacklist(who=author) is False or guild.id in blocked_guilds and not await self.is_mod_or_admin(author)) or author.id in guild_config["BLACKLISTED_MEMBERS"]:
                 continue
             user_data = await self.config.user(author).all()
             embed_links = message.channel.permissions_for(guild.me).embed_links
 
             away_msg = user_data["MESSAGE"]
+
+            ctx = await ctx.bot.get_context(message)
+            command = ctx.bot.get_command("away")
+
+            try:
+                command = await com.can_run(
+                    ctx, change_permission_state=False
+                )
+            except commands.CommandError:
+                can = False
+
+            if can is False:
+                continue
+
             # Convert possible `delete_after` of < 5s of before PR#212
             if isinstance(away_msg, list) and away_msg[1] is not None and away_msg[1] < 5:
                 await self.config.user(author).MESSAGE.set((away_msg[0], 5))
