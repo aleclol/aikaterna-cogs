@@ -245,7 +245,7 @@ class Away(commands.Cog):
             command = self.bot.get_command("away")
 
             try:
-                command = await com.can_run(
+                command = await command.can_run(
                     ctx, change_permission_state=False
                 )
             except commands.CommandError:
