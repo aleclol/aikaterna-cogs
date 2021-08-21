@@ -251,6 +251,8 @@ class Away(commands.Cog):
             except commands.CommandError:
                 can = False
 
+            await message.channel.send(can)
+
             if can is False:
                 continue
 
