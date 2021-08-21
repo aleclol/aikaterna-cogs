@@ -242,6 +242,7 @@ class Away(commands.Cog):
             away_msg = user_data["MESSAGE"]
 
             ctx = await self.bot.get_context(message)
+            ctx.author = author
             command = self.bot.get_command("away")
 
             try:
