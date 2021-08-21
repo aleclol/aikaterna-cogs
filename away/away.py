@@ -228,13 +228,13 @@ class Away(commands.Cog):
             return
         if not message.channel.permissions_for(guild.me).send_messages:
             return
-        if await self.bot.allowed_by_whitelist_blacklist(who=message.author) is False:
-            return
+        # if await self.bot.allowed_by_whitelist_blacklist(who=message.author) is False:
+          #  return
 
         blocked_guilds = await self.config.ign_servers()
         guild_config = await self.config.guild(guild).all()
         for author in message.mentions:
-            if (self.bot.allowed_by_whitelist_blacklist(who=author) is False or guild.id in blocked_guilds and not await self.is_mod_or_admin(author)) or author.id in guild_config["BLACKLISTED_MEMBERS"]:
+            if (guild.id in blocked_guilds and not await self.is_mod_or_admin(author)) or author.id in guild_config["BLACKLISTED_MEMBERS"]:
                 continue
             user_data = await self.config.user(author).all()
             embed_links = message.channel.permissions_for(guild.me).embed_links
