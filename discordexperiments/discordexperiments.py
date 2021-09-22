@@ -30,6 +30,8 @@ class DiscordExperiments(commands.Cog):
         )
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
+    @commands.guild_only()
     @commands.command()
     async def ytparty(self, ctx, invite_max_age_in_seconds=86400):
         """
@@ -41,6 +43,8 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 755600276941176913, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
+    @commands.guild_only()
     @commands.command()
     async def betrayal(self, ctx, invite_max_age_in_seconds=86400):
         """
@@ -52,6 +56,8 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 773336526917861400, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
+    @commands.guild_only()
     @commands.command()
     async def fishington(self, ctx, invite_max_age_in_seconds=86400):
         """
@@ -63,6 +69,8 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 814288819477020702, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
+    @commands.guild_only()
     @commands.command()
     async def pokernight(self, ctx, invite_max_age_in_seconds=86400):
         """
@@ -74,6 +82,8 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 755827207812677713, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
+    @commands.guild_only()
     @commands.command()
     async def chess(self, ctx, invite_max_age_in_seconds=86400):
         """
