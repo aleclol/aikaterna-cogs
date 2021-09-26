@@ -246,7 +246,7 @@ class Away(commands.Cog):
 
         blocked_guilds = self.ignored_servers
         try:
-            guild_config = self.guild_settings
+            guild_config = self.guild_settings[message.guild.id]
         except KeyEror:
             guild_config = {"TEXT_ONLY": False, "BLACKLISTED_MEMBERS": [], "AUTO_CLEAR": False}
 
