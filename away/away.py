@@ -253,12 +253,12 @@ class Away(commands.Cog):
         if len(message.mentions) > 5:
             return
         if message.mentions:
-            user_data = await self.config.all_users()
+            all_users = await self.config.all_users()
         for author in message.mentions:
             if (await self.bot.allowed_by_whitelist_blacklist(who=author) is False or guild.id in blocked_guilds and not await self.is_mod_or_admin(author)) or author.id in guild_config["BLACKLISTED_MEMBERS"]:
                 continue
             try:
-                user_data = self.user_data[author.id]
+                user_data = all_users[author.id]
             except KeyError:
                 user_data = {"MESSAGE": False,"IDLE_MESSAGE": False,"DND_MESSAGE": False,"OFFLINE_MESSAGE": False,"GAME_MESSAGE": {},"STREAMING_MESSAGE": False,"LISTENING_MESSAGE": False}
 
