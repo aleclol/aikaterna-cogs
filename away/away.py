@@ -11,7 +11,7 @@ class Away(commands.Cog):
     """Le away cog"""
 
     default_global_settings = {"ign_servers": []}
-    default_guild_settings = {"TEXT_ONLY": False, "BLACKLISTED_MEMBERS": []}
+    default_guild_settings = {"TEXT_ONLY": False, "BLACKLISTED_MEMBERS": [], "AUTO_CLEAR": False}
     default_user_settings = {
         "MESSAGE": False,
         "IDLE_MESSAGE": False,
@@ -33,6 +33,19 @@ class Away(commands.Cog):
         self.config.register_global(**self.default_global_settings)
         self.config.register_guild(**self.default_guild_settings)
         self.config.register_user(**self.default_user_settings)
+        self.ignored_servers = []
+        self.guild_settings = {}
+        self.unset_counter_cache = {}
+        self.bot.loop.create_task(self.fill_cache(self))
+
+
+    async def fill_cache(self):
+        guilds = await self.config.all_guilds()
+        global_settings = await self.config.all()
+        users = await self.config.all_users()
+        self.ignored_servers = global_settings["ign_servers"]
+        for guild in guilds:
+            self.guild_settings[guild] = guilds[guild]
 
     def _draw_play(self, song):
         song_start_time = song.start
@@ -231,12 +244,24 @@ class Away(commands.Cog):
         if await self.bot.allowed_by_whitelist_blacklist(who=message.author) is False:
             return
 
-        blocked_guilds = await self.config.ign_servers()
-        guild_config = await self.config.guild(guild).all()
+        blocked_guilds = self.ignored_servers
+        try:
+            guild_config = self.guild_settings
+        except KeyEror:
+            guild_config = {"TEXT_ONLY": False, "BLACKLISTED_MEMBERS": [], "AUTO_CLEAR": False}
+
+        if len(message.mentions) > 5:
+            return
+        if message.mentions:
+            user_data = await self.config.all_users()
         for author in message.mentions:
             if (await self.bot.allowed_by_whitelist_blacklist(who=author) is False or guild.id in blocked_guilds and not await self.is_mod_or_admin(author)) or author.id in guild_config["BLACKLISTED_MEMBERS"]:
                 continue
-            user_data = await self.config.user(author).all()
+            try:
+                user_data = self.user_settings[author.id]
+            except KeyError:
+                user_data = {"MESSAGE": False,"IDLE_MESSAGE": False,"DND_MESSAGE": False,"OFFLINE_MESSAGE": False,"GAME_MESSAGE": {},"STREAMING_MESSAGE": False,"LISTENING_MESSAGE": False}
+
             embed_links = message.channel.permissions_for(guild.me).embed_links
 
             away_msg = user_data["MESSAGE"]
