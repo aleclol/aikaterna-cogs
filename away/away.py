@@ -258,7 +258,7 @@ class Away(commands.Cog):
             if (await self.bot.allowed_by_whitelist_blacklist(who=author) is False or guild.id in blocked_guilds and not await self.is_mod_or_admin(author)) or author.id in guild_config["BLACKLISTED_MEMBERS"]:
                 continue
             try:
-                user_data = self.user_settings[author.id]
+                user_data = self.user_data[author.id]
             except KeyError:
                 user_data = {"MESSAGE": False,"IDLE_MESSAGE": False,"DND_MESSAGE": False,"OFFLINE_MESSAGE": False,"GAME_MESSAGE": {},"STREAMING_MESSAGE": False,"LISTENING_MESSAGE": False}
 
