@@ -36,7 +36,7 @@ class Away(commands.Cog):
         self.ignored_servers = []
         self.guild_settings = {}
         self.unset_counter_cache = {}
-        self.bot.loop.create_task(self.fill_cache(self))
+        self.bot.loop.create_task(self.fill_cache())
 
 
     async def fill_cache(self):
