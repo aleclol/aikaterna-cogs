@@ -11,7 +11,7 @@ class Away(commands.Cog):
     """Le away cog"""
 
     default_global_settings = {"ign_servers": []}
-    default_guild_settings = {"TEXT_ONLY": False, "BLACKLISTED_MEMBERS": [], "AUTO_CLEAR": False}
+    default_guild_settings = {"TEXT_ONLY": False, "BLACKLISTED_MEMBERS": []}
     default_user_settings = {
         "MESSAGE": False,
         "IDLE_MESSAGE": False,
