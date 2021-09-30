@@ -327,7 +327,7 @@ class Tools(commands.Cog):
             embed=discord.Embed(description="Getting member names...", colour=await ctx.embed_colour())
         )
         await asyncio.sleep(1.5)  # taking time to retrieve the names
-        users_in_role = "\n".join(sorted(m.display_name for m in guild.members if role in m.roles))
+        users_in_role = "\n".join(sorted(m.display_name + " - " + str(m.id) for m in guild.members if role in m.roles))
         if len(users_in_role) == 0:
             embed = discord.Embed(
                 description=cf.bold(f"0 users found in the {role.name} role."),
