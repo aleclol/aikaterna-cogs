@@ -43,6 +43,7 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 880218394199220334, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
     @commands.command()
     async def ytpartyold(self, ctx, invite_max_age_in_seconds=86400):
         """
@@ -106,6 +107,7 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 832012586023256104, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
     @commands.command()
     async def doodlecrew(self, ctx, invite_max_age_in_seconds=86400):
         """
@@ -117,6 +119,7 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 878067389634314250, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
     @commands.command()
     async def lettertile(self, ctx, invite_max_age_in_seconds=86400):
         """
@@ -128,6 +131,7 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 879863686565621790, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
     @commands.command()
     async def wordsnacks(self, ctx, invite_max_age_in_seconds=86400):
         """
