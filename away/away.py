@@ -35,7 +35,6 @@ class Away(commands.Cog):
         self.config.register_user(**self.default_user_settings)
         self.ignored_servers = []
         self.guild_settings = {}
-        self.unset_counter_cache = {}
         self.bot.loop.create_task(self.fill_cache())
 
 
@@ -617,13 +616,13 @@ class Away(commands.Cog):
             bl_mems = await self.config.guild(guild).BLACKLISTED_MEMBERS()
             if member.id not in bl_mems:
                 bl_mems.append(member.id)
-                self.guild_settings[guild.id]["BLACKLISTED_MEMBERS"] = bl_mems
+                self.guild_settings[guild.id] = {"BLACKLISTED_MEMBERS" : bl_mems}
                 await self.config.guild(guild).BLACKLISTED_MEMBERS.set(bl_mems)
                 msg = f"Away messages will not appear when {member.display_name} is mentioned in this guild."
                 await ctx.send(msg)
             elif member.id in bl_mems:
                 bl_mems.remove(member.id)
-                self.guild_settings[guild.id]["BLACKLISTED_MEMBERS"] = bl_mems
+                self.guild_settings[guild.id] = {"BLACKLISTED_MEMBERS" : bl_mems}
                 await self.config.guild(guild).BLACKLISTED_MEMBERS.set(bl_mems)
                 msg = f"Away messages will appear when {member.display_name} is mentioned in this guild."
                 await ctx.send(msg)
@@ -658,7 +657,7 @@ class Away(commands.Cog):
             message = (
                 "Away messages are now forced to be text only, regardless of the bot's permissions for embed links."
             )
-        self.guild_settings[guild.id]["TEXT_ONLY"] = not text_only
+        self.guild_settings[guild.id] = {"TEXT_ONLY" : not text_only}
         await self.config.guild(ctx.guild).TEXT_ONLY.set(not text_only)
         await ctx.send(message)
 
