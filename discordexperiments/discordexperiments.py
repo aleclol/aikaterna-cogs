@@ -68,6 +68,7 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 880218832743055411, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
     @commands.command()
     async def betrayal(self, ctx, invite_max_age_in_seconds=86400):
         """
@@ -118,6 +119,7 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 832012774040141894, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
     @commands.command()
     async def chessdev(self, ctx, invite_max_age_in_seconds=86400):
         """
