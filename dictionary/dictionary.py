@@ -127,7 +127,7 @@ class Dictionary(commands.Cog):
                 if "window.INITIAL_STATE" in item.string:
                     content = item.string
                     content = content.lstrip("window.INITIAL_STATE =").rstrip(";")
-                    content = content.replace("undefined", '"None"').replace("true", '"True"').replace("false", '"False"')
+                    content = content.replace("undefined", '"None"').replace(": true", ': "True"').replace(": false", ': "False"')
                     try:
                         website_data = json.loads(content)
                     except json.decoder.JSONDecodeError:
@@ -139,7 +139,10 @@ class Dictionary(commands.Cog):
 
         final = []
         if website_data:
-            syn_list = website_data["searchData"]["tunaApiData"]["posTabs"][0][lookup_type]
+            tuna_api_data = website_data["searchData"]["tunaApiData"]
+            if not tuna_api_data:
+                return None
+            syn_list = tuna_api_data["posTabs"][0][lookup_type]
             for syn in syn_list:
                 final.append(syn["term"])
 
