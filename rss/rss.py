@@ -29,7 +29,7 @@ IPV4_RE = re.compile("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")
 IPV6_RE = re.compile("([a-f0-9:]+:+)+[a-f0-9]+")
 
 
-__version__ = "1.6.1"
+__version__ = "1.6.2"
 
 
 class RSS(commands.Cog):
@@ -47,7 +47,11 @@ class RSS(commands.Cog):
 
         self._read_feeds_loop = None
 
-        self._headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0'}
+        self._headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0"}
+
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete"""
+        return
 
     def initialize(self):
         self._read_feeds_loop = self.bot.loop.create_task(self.read_feeds())
@@ -216,6 +220,13 @@ class RSS(commands.Cog):
                         rss_object["tags_plaintext_list"] = humanize_list(tags_list)
                         rss_object["is_special"].append("tags_list")
                         rss_object["is_special"].append("tags_plaintext_list")
+
+        # if image dict tag exists, check for an image
+        try:
+            rss_object["image_plaintext"] = rss_object["image"]["href"]
+            rss_object["is_special"].append("image_plaintext")
+        except KeyError:
+            pass
 
         # if media_thumbnail or media_content exists, return the first friendly url
         try:
@@ -589,7 +600,7 @@ class RSS(commands.Cog):
             except NoFeedContent as e:
                 await ctx.send(str(e))
                 return
-              
+
             if valid_url:
                 await self._add_feed(ctx, feed_name.lower(), channel, url)
             else:
@@ -601,7 +612,9 @@ class RSS(commands.Cog):
         pass
 
     @_rss_embed.command(name="color", aliases=["colour"])
-    async def _rss_embed_color(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, color: str = None):
+    async def _rss_embed_color(
+        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, color: str = None
+    ):
         """
         Set an embed color for a feed.
 
@@ -657,7 +670,9 @@ class RSS(commands.Cog):
         await ctx.send(f"Embed color for {bold(feed_name)} set to {user_facing_hex} ({color_name}).")
 
     @_rss_embed.command(name="image")
-    async def _rss_embed_image(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, image_tag_name: str = None):
+    async def _rss_embed_image(
+        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, image_tag_name: str = None
+    ):
         """
         Set a tag to be a large embed image.
 
@@ -689,7 +704,9 @@ class RSS(commands.Cog):
                 msg += "will be in tags named `$content_image02`, `$content_image03`, etc. Not every feed entry "
                 msg += "will have the same amount of scraped image tags. Images can also be found under tags named "
                 msg += "`$media_content_plaintext`, if present.\nExperiment with tags by setting them as your "
-                msg += f"template with `{ctx.prefix}rss template` and using `{ctx.prefix}rss force` to view the content."
+                msg += (
+                    f"template with `{ctx.prefix}rss template` and using `{ctx.prefix}rss force` to view the content."
+                )
                 await ctx.send(msg)
                 return
 
@@ -704,7 +721,9 @@ class RSS(commands.Cog):
             )
 
     @_rss_embed.command(name="thumbnail")
-    async def _rss_embed_thumbnail(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, thumbnail_tag_name: str = None):
+    async def _rss_embed_thumbnail(
+        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, thumbnail_tag_name: str = None
+    ):
         """
         Set a tag to be a thumbnail image.
 
@@ -736,7 +755,9 @@ class RSS(commands.Cog):
                 msg += "will be in tags named `$content_image02`, `$content_image03`, etc. Not every feed entry "
                 msg += "will have the same amount of scraped image tags. Images can also be found under tags named "
                 msg += "`$media_content_plaintext`, if present.\nExperiment with tags by setting them as your "
-                msg += f"template with `{ctx.prefix}rss template` and using `{ctx.prefix}rss force` to view the content."
+                msg += (
+                    f"template with `{ctx.prefix}rss template` and using `{ctx.prefix}rss force` to view the content."
+                )
                 await ctx.send(msg)
                 return
 
@@ -791,7 +812,9 @@ class RSS(commands.Cog):
                     await ctx.send("I can't reach that website.")
                     return
                 except aiohttp.client_exceptions.InvalidURL:
-                    await ctx.send("That seems to be an invalid URL. Use a full website URL like `https://www.site.com/`.")
+                    await ctx.send(
+                        "That seems to be an invalid URL. Use a full website URL like `https://www.site.com/`."
+                    )
                     return
                 except asyncio.exceptions.TimeoutError:
                     await ctx.send("The site didn't respond in time or there was no response.")
@@ -818,7 +841,7 @@ class RSS(commands.Cog):
                     continue
                 if feed_url.startswith("//"):
                     final_url = f"{url_scheme}:{feed_url}"
-                elif ((not ls_feed_url.startswith(url_scheme)) and (not ls_feed_url.startswith(base_url))):
+                elif (not ls_feed_url.startswith(url_scheme)) and (not ls_feed_url.startswith(base_url)):
                     final_url = f"{url_scheme}://{base_url}/{ls_feed_url}"
                 elif ls_feed_url.startswith(base_url):
                     final_url = f"{url_scheme}://{base_url}"
@@ -854,7 +877,9 @@ class RSS(commands.Cog):
         await self.get_current_feed(channel, feed_name, rss_feed, force=True)
 
     @rss.command(name="limit")
-    async def _rss_limit(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, character_limit: int = None):
+    async def _rss_limit(
+        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, character_limit: int = None
+    ):
         """
         Set a character limit for feed posts. Use 0 for unlimited.
 
@@ -1011,7 +1036,7 @@ class RSS(commands.Cog):
         if not override_list:
             msg = "No site overrides saved."
         else:
-            msg = "Active for:\n" + '\n'.join(override_list)
+            msg = "Active for:\n" + "\n".join(override_list)
         await ctx.send(box(msg))
 
     @_rss_parse.command(name="remove", aliases=["delete", "del"])
@@ -1112,7 +1137,9 @@ class RSS(commands.Cog):
         pass
 
     @_rss_tag.command(name="allow")
-    async def _rss_tag_allow(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, tag: str = None):
+    async def _rss_tag_allow(
+        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, tag: str = None
+    ):
         """
         Set an allowed tag for a feed to be posted. The tag must match exactly (without regard to title casing).
         No regex or placeholder qualification.
@@ -1128,12 +1155,16 @@ class RSS(commands.Cog):
         async with self.config.channel(channel).feeds() as feed_data:
             allowed_tags = feed_data[feed_name].get("allowed_tags", [])
             if tag.lower() in [x.lower() for x in allowed_tags]:
-                return await ctx.send(f"{bold(await self._title_case(tag))} is already in the allowed list for {bold(feed_name)}.")
+                return await ctx.send(
+                    f"{bold(await self._title_case(tag))} is already in the allowed list for {bold(feed_name)}."
+                )
             allowed_tags.append(tag.lower())
             feed_data[feed_name]["allowed_tags"] = allowed_tags
 
-        await ctx.send(f"{bold(await self._title_case(tag))} was added to the list of allowed tags for {bold(feed_name)}. "
-                        "If a feed post's `$tags` does not include this value, the feed will not post.")
+        await ctx.send(
+            f"{bold(await self._title_case(tag))} was added to the list of allowed tags for {bold(feed_name)}. "
+            "If a feed post's `$tags` does not include this value, the feed will not post."
+        )
 
     @_rss_tag.command(name="allowlist")
     async def _rss_tag_allowlist(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None):
@@ -1157,7 +1188,9 @@ class RSS(commands.Cog):
         await ctx.send(box(msg, lang="ini"))
 
     @_rss_tag.command(name="remove", aliases=["delete"])
-    async def _rss_tag_remove(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, tag: str = None):
+    async def _rss_tag_remove(
+        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, tag: str = None
+    ):
         """
         Remove a tag from the allow list. The tag must match exactly (without regard to title casing).
         No regex or placeholder qualification.
@@ -1173,12 +1206,18 @@ class RSS(commands.Cog):
             try:
                 allowed_tags.remove(tag.lower())
                 feed_data[feed_name]["allowed_tags"] = allowed_tags
-                await ctx.send(f"{bold(await self._title_case(tag))} was removed from the list of allowed tags for {bold(feed_name)}.")
+                await ctx.send(
+                    f"{bold(await self._title_case(tag))} was removed from the list of allowed tags for {bold(feed_name)}."
+                )
             except ValueError:
-                await ctx.send(f"{bold(await self._title_case(tag))} was not found in the allow list for {bold(feed_name)}.")
+                await ctx.send(
+                    f"{bold(await self._title_case(tag))} was not found in the allow list for {bold(feed_name)}."
+                )
 
     @rss.command(name="template")
-    async def _rss_template(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, template: str = None):
+    async def _rss_template(
+        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, template: str = None
+    ):
         """
         Set a template for the feed alert.
 
@@ -1336,7 +1375,9 @@ class RSS(commands.Cog):
                 feed_tag_list = [x.lower() for x in feedparser_plus_obj.get("tags_list", [])]
                 intersection = list(set(feed_tag_list).intersection(allowed_post_tags))
                 if len(intersection) == 0:
-                    log.debug(f"{name} feed post in {channel.name} ({channel.id}) was denied because of an allowed tag mismatch.")
+                    log.debug(
+                        f"{name} feed post in {channel.name} ({channel.id}) was denied because of an allowed tag mismatch."
+                    )
                     continue
 
             # starting to fill out the template for feeds that passed tag verification (if present)
@@ -1565,6 +1606,6 @@ class RSS(commands.Cog):
 class NoFeedContent(Exception):
     def __init__(self, m):
         self.message = m
-    
+
     def __str__(self):
         return self.message

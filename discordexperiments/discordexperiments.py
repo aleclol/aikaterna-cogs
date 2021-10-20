@@ -9,6 +9,10 @@ class DiscordExperiments(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete"""
+        return
+
     async def _create_invite(self, ctx, app_id: int, max_age: int, app_name: str):
         voice = ctx.author.voice
         if not voice:
@@ -165,3 +169,14 @@ class DiscordExperiments(commands.Cog):
         """
         app_name = "the Word Snacks game"
         await self._create_invite(ctx, 879863976006127627, invite_max_age_in_seconds, app_name)
+
+    @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.command()
+    async def spellcast(self, ctx, invite_max_age_in_seconds=86400):
+        """
+        Create a SpellCast voice channel invite.
+
+        Use `0` for `invite_max_age_in_seconds` if you want the invite to be permanent.
+        """
+        app_name = "the SpellCast game"
+        await self._create_invite(ctx, 852509694341283871, invite_max_age_in_seconds, app_name)
