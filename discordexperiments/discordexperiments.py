@@ -171,6 +171,7 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 879863976006127627, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
     @commands.command()
     async def spellcast(self, ctx, invite_max_age_in_seconds=86400):
         """
