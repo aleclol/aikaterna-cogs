@@ -37,7 +37,7 @@ class DiscordExperiments(commands.Cog):
     @commands.has_permissions(create_instant_invite=True)
     @commands.guild_only()
     @commands.command()
-    async def ytparty(self, ctx, invite_max_age_in_seconds=86400):
+    async def ytparty(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a YouTube Together voice channel invite.
 
@@ -49,7 +49,7 @@ class DiscordExperiments(commands.Cog):
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
     @commands.has_permissions(create_instant_invite=True)
     @commands.command()
-    async def ytpartyold(self, ctx, invite_max_age_in_seconds=86400):
+    async def ytpartyold(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a YouTube Together voice channel invite, the old version.
 
@@ -62,7 +62,7 @@ class DiscordExperiments(commands.Cog):
     @commands.has_permissions(create_instant_invite=True)
     @commands.guild_only()
     @commands.command()
-    async def ytpartydev(self, ctx, invite_max_age_in_seconds=86400):
+    async def ytpartydev(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a YouTube Together voice channel invite, the dev version.
 
@@ -74,7 +74,7 @@ class DiscordExperiments(commands.Cog):
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
     @commands.has_permissions(create_instant_invite=True)
     @commands.command()
-    async def betrayal(self, ctx, invite_max_age_in_seconds=86400):
+    async def betrayal(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a Betrayal.io voice channel invite.
 
@@ -87,7 +87,7 @@ class DiscordExperiments(commands.Cog):
     @commands.has_permissions(create_instant_invite=True)
     @commands.guild_only()
     @commands.command()
-    async def fishington(self, ctx, invite_max_age_in_seconds=86400):
+    async def fishington(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a Fishington.io voice channel invite.
 
@@ -100,7 +100,7 @@ class DiscordExperiments(commands.Cog):
     @commands.has_permissions(create_instant_invite=True)
     @commands.guild_only()
     @commands.command()
-    async def pokernight(self, ctx, invite_max_age_in_seconds=86400):
+    async def pokernight(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a Discord Poker Night voice channel invite.
 
@@ -113,7 +113,7 @@ class DiscordExperiments(commands.Cog):
     @commands.has_permissions(create_instant_invite=True)
     @commands.guild_only()
     @commands.command()
-    async def chess(self, ctx, invite_max_age_in_seconds=86400):
+    async def chess(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a Chess in the Park voice channel invite.
 
@@ -125,7 +125,7 @@ class DiscordExperiments(commands.Cog):
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
     @commands.has_permissions(create_instant_invite=True)
     @commands.command()
-    async def chessdev(self, ctx, invite_max_age_in_seconds=86400):
+    async def chessdev(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a Chess in the Park voice channel invite, the dev version.
 
@@ -137,7 +137,7 @@ class DiscordExperiments(commands.Cog):
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
     @commands.has_permissions(create_instant_invite=True)
     @commands.command()
-    async def doodlecrew(self, ctx, invite_max_age_in_seconds=86400):
+    async def doodlecrew(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a Doodle Crew voice channel invite.
 
@@ -149,7 +149,7 @@ class DiscordExperiments(commands.Cog):
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
     @commands.has_permissions(create_instant_invite=True)
     @commands.command()
-    async def lettertile(self, ctx, invite_max_age_in_seconds=86400):
+    async def lettertile(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a Letter Tile voice channel invite.
 
@@ -161,7 +161,7 @@ class DiscordExperiments(commands.Cog):
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
     @commands.has_permissions(create_instant_invite=True)
     @commands.command()
-    async def wordsnacks(self, ctx, invite_max_age_in_seconds=86400):
+    async def wordsnacks(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a Word Snacks voice channel invite.
 
@@ -173,7 +173,7 @@ class DiscordExperiments(commands.Cog):
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
     @commands.has_permissions(create_instant_invite=True)
     @commands.command()
-    async def spellcast(self, ctx, invite_max_age_in_seconds=86400):
+    async def spellcast(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a SpellCast voice channel invite.
 
@@ -183,8 +183,9 @@ class DiscordExperiments(commands.Cog):
         await self._create_invite(ctx, 852509694341283871, invite_max_age_in_seconds, app_name)
 
     @commands.cooldown(1, 10, discord.ext.commands.BucketType.guild)
+    @commands.has_permissions(create_instant_invite=True)
     @commands.command()
-    async def checkers(self, ctx, invite_max_age_in_seconds=86400):
+    async def checkers(self, ctx, invite_max_age_in_seconds=10800):
         """
         Create a Checkers in the Park voice channel invite.
 
