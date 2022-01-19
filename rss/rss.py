@@ -29,7 +29,7 @@ IPV4_RE = re.compile("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")
 IPV6_RE = re.compile("([a-f0-9:]+:+)+[a-f0-9]+")
 
 
-__version__ = "1.6.3"
+__version__ = "1.6.6"
 
 
 class RSS(commands.Cog):
@@ -193,6 +193,7 @@ class RSS(commands.Cog):
 
                     if list_item_check == TagType.DICT:
                         authors_content_counter = 0
+                        enclosure_content_counter = 0
 
                         # common "authors" tag format
                         try:
@@ -201,6 +202,23 @@ class RSS(commands.Cog):
                             tag_content = BeautifulSoup(list_item["name"], "html.parser")
                             rss_object[name] = tag_content.get_text()
                             rss_object["is_special"].append(name)
+                        except KeyError:
+                            pass
+
+                        # common "enclosure" tag image format
+                        # note: this is not adhering to RSS feed specifications
+                        # proper enclosure tags should have `length`, `type`, `url`
+                        # and not `href`, `type`, `rel`
+                        # but, this is written for the first feed I have seen with an "enclosure" tag
+                        try:
+                            image_url = list_item["href"]
+                            image_type = list_item["type"]
+                            image_rel = list_item["rel"]
+                            enclosure_content_counter += 1
+                            name = f"media_plaintext{str(enclosure_content_counter).zfill(2)}"
+                            rss_object[name] = image_url
+                            rss_object["is_special"].append(name)
+                            tags_list.append(tag)
                         except KeyError:
                             pass
 
@@ -338,7 +356,7 @@ class RSS(commands.Cog):
         return None
 
     async def _get_feed_names(self, channel: discord.TextChannel):
-        """Helper for rss list."""
+        """Helper for rss list/listall."""
         feed_list = []
         space = "\N{SPACE}"
         all_feeds = await self.config.channel(channel).feeds.all()
@@ -393,6 +411,11 @@ class RSS(commands.Cog):
         except asyncio.exceptions.TimeoutError:
             friendly_msg = "The bot timed out while trying to access that content."
             msg = f"asyncio timeout while accessing feed at url:\n\t{url}"
+            log.error(msg, exc_info=True)
+            return None, friendly_msg
+        except aiohttp.client_exceptions.ServerDisconnectedError:
+            friendly_msg = "The target server disconnected early without a response."
+            msg = f"server disconnected while accessing feed at url:\n\t{url}"
             log.error(msg, exc_info=True)
             return None, friendly_msg
         except Exception:
@@ -822,8 +845,17 @@ class RSS(commands.Cog):
                         "That seems to be an invalid URL. Use a full website URL like `https://www.site.com/`."
                     )
                     return
+                except aiohttp.client_exceptions.ServerDisconnectedError:
+                    await ctx.send("The server disconnected early without a response.")
+                    return
                 except asyncio.exceptions.TimeoutError:
                     await ctx.send("The site didn't respond in time or there was no response.")
+                    return
+                except Exception as e:
+                    msg = "There was an issue trying to find a feed in that site. "
+                    msg += "Please check your console for more information."
+                    log.exception(e, exc_info=e)
+                    await ctx.send(msg)
                     return
 
         if "403 Forbidden" in soup.get_text():
@@ -939,6 +971,27 @@ class RSS(commands.Cog):
         else:
             msg += "\n\tNone."
         for page in pagify(msg, delims=["\n"], page_length=1800):
+            await ctx.send(box(page, lang="ini"))
+
+    @rss.command(name="listall")
+    async def _rss_listall(self, ctx):
+        """List all saved feeds for this server."""
+        all_channels = await self.config.all_channels()
+        all_guild_channels = [x.id for x in ctx.guild.channels]
+        msg = ""
+        for channel_id, data in all_channels.items():
+            if channel_id in all_guild_channels:
+                channel_obj = ctx.guild.get_channel(channel_id)
+                feeds = await self._get_feed_names(channel_obj)
+                if not feeds:
+                    continue
+                if feeds == ["None."]:
+                    continue
+                msg += f"[ Available Feeds for #{channel_obj.name} ]\n\n\t"
+                msg += "\n\t".join(sorted(feeds))
+                msg += "\n\n"
+
+        for page in pagify(msg, delims=["\n\n", "\n"], page_length=1800):
             await ctx.send(box(page, lang="ini"))
 
     @rss.command(name="listtags")
