@@ -232,12 +232,11 @@ class Away(commands.Cog):
             return
 
         blocked_guilds = await self.bot.config.ign_servers()
-        guild_config = await self.bot.config.guild(message.guild)
+        guild_config = await self.bot.config.guild(message.guild).all()
 
         if len(message.mentions) > 5:
             return
-        if message.mentions:
-            all_users = await self.config.all_users()
+
         for author in message.mentions:
             if (await self.bot.allowed_by_whitelist_blacklist(who=author) is False or guild.id in blocked_guilds and not await self.is_mod_or_admin(author)) or author.id in guild_config["BLACKLISTED_MEMBERS"]:
                 continue
