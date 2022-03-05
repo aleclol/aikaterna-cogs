@@ -33,18 +33,6 @@ class Away(commands.Cog):
         self.config.register_global(**self.default_global_settings)
         self.config.register_guild(**self.default_guild_settings)
         self.config.register_user(**self.default_user_settings)
-        self.ignored_servers = []
-        self.guild_settings = {}
-        self.bot.loop.create_task(self.fill_cache())
-
-
-    async def fill_cache(self):
-        guilds = await self.config.all_guilds()
-        global_settings = await self.config.all()
-        users = await self.config.all_users()
-        self.ignored_servers = global_settings["ign_servers"]
-        for guild in guilds:
-            self.guild_settings[guild] = guilds[guild]
 
     def _draw_play(self, song):
         song_start_time = song.start
@@ -243,11 +231,8 @@ class Away(commands.Cog):
         if await self.bot.allowed_by_whitelist_blacklist(who=message.author) is False:
             return
 
-        blocked_guilds = self.ignored_servers
-        try:
-            guild_config = self.guild_settings[message.guild.id]
-        except KeyEror:
-            guild_config = {"TEXT_ONLY": False, "BLACKLISTED_MEMBERS": [], "AUTO_CLEAR": False}
+        blocked_guilds = await self.bot.config.ign_servers()
+        guild_config = await self.bot.config.guild(message.guild)
 
         if len(message.mentions) > 5:
             return
@@ -616,13 +601,11 @@ class Away(commands.Cog):
             bl_mems = await self.config.guild(guild).BLACKLISTED_MEMBERS()
             if member.id not in bl_mems:
                 bl_mems.append(member.id)
-                self.guild_settings[guild.id] = {"BLACKLISTED_MEMBERS" : bl_mems}
                 await self.config.guild(guild).BLACKLISTED_MEMBERS.set(bl_mems)
                 msg = f"Away messages will not appear when {member.display_name} is mentioned in this guild."
                 await ctx.send(msg)
             elif member.id in bl_mems:
                 bl_mems.remove(member.id)
-                self.guild_settings[guild.id] = {"BLACKLISTED_MEMBERS" : bl_mems}
                 await self.config.guild(guild).BLACKLISTED_MEMBERS.set(bl_mems)
                 msg = f"Away messages will appear when {member.display_name} is mentioned in this guild."
                 await ctx.send(msg)
@@ -630,13 +613,11 @@ class Away(commands.Cog):
         if guild.id in (await self.config.ign_servers()):
             guilds = await self.config.ign_servers()
             guilds.remove(guild.id)
-            self.ignored_servers = guilds
             await self.config.ign_servers.set(guilds)
             message = "Not ignoring this guild anymore."
         else:
             guilds = await self.config.ign_servers()
             guilds.append(guild.id)
-            self.ignored_servers = guilds
             await self.config.ign_servers.set(guilds)
             message = "Ignoring this guild."
         await ctx.send(message)
@@ -657,7 +638,6 @@ class Away(commands.Cog):
             message = (
                 "Away messages are now forced to be text only, regardless of the bot's permissions for embed links."
             )
-        self.guild_settings[guild.id] = {"TEXT_ONLY" : not text_only}
         await self.config.guild(ctx.guild).TEXT_ONLY.set(not text_only)
         await ctx.send(message)
 
