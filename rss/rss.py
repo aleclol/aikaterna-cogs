@@ -1,20 +1,22 @@
 import asyncio
 import aiohttp
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import copy
 import datetime
 import discord
 import feedparser
-import imghdr
+import filetype
 import io
 import logging
 import re
 import time
-from typing import Optional
+import warnings
+from typing import Optional, Union
 from types import MappingProxyType, SimpleNamespace
 from urllib.parse import urlparse
 
 from redbot.core import checks, commands, Config
+from redbot.core.utils import can_user_send_messages_in
 from redbot.core.utils.chat_formatting import bold, box, escape, humanize_list, pagify
 
 from .color import Color
@@ -27,9 +29,23 @@ log = logging.getLogger("red.aikaterna.rss")
 
 IPV4_RE = re.compile("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")
 IPV6_RE = re.compile("([a-f0-9:]+:+)+[a-f0-9]+")
+GuildMessageable = Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.Thread]
 
 
-__version__ = "1.8.1"
+__version__ = "2.1.0"
+
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    # Ignore the warning in feedparser module *and* our module to account for the unreleased fix of this warning:
+    # https://github.com/kurtmckee/feedparser/pull/278
+    module=r"^(feedparser|rss)(\..+)?$",
+    message=(
+        "To avoid breaking existing software while fixing issue 310, a temporary mapping has been created from"
+        " `updated_parsed` to `published_parsed` if `updated_parsed` doesn't exist"
+    ),
+)
+warnings.filterwarnings("ignore", module="rss", category=MarkupResemblesLocatorWarning)
 
 
 class RSS(commands.Cog):
@@ -76,7 +92,7 @@ class RSS(commands.Cog):
                     pass
         return rss_object
 
-    async def _add_feed(self, ctx, feed_name: str, channel: discord.TextChannel, url: str):
+    async def _add_feed(self, ctx, feed_name: str, channel: GuildMessageable, url: str):
         """Helper for rss add."""
         rss_exists = await self._check_feed_existing(ctx, feed_name, channel)
         if not rss_exists:
@@ -272,18 +288,27 @@ class RSS(commands.Cog):
 
         return rss_object
 
-    async def _check_channel_permissions(self, ctx, channel: discord.TextChannel, addl_send_messages_check=True):
+    async def _check_channel_permissions(self, ctx, channel: GuildMessageable, addl_send_messages_check=True):
         """Helper for rss functions."""
         if not channel.permissions_for(ctx.me).read_messages:
             await ctx.send("I don't have permissions to read that channel.")
             return False
-        elif not channel.permissions_for(ctx.author).read_messages:
+        author_perms = channel.permissions_for(ctx.author)
+        if not author_perms.read_messages:
             await ctx.send("You don't have permissions to read that channel.")
             return False
-        elif addl_send_messages_check:
+        # bot can only see threads that it has permissions to read messages in so no special handling needed
+        # if author has read messages perm, they can read all public threads *but also* private threads they are in
+        if isinstance(channel, discord.Thread) and channel.is_private() and not author_perms.manage_threads:
+            try:
+                await channel.fetch_member(ctx.author.id)
+            except discord.NotFound:
+                # author is not in a private thread
+                return False
+        if addl_send_messages_check:
             # check for send messages perm if needed, like on an rss add
             # not needed on something like rss delete
-            if not channel.permissions_for(ctx.me).send_messages:
+            if not can_user_send_messages_in(ctx.me, channel):
                 await ctx.send("I don't have permissions to send messages in that channel.")
                 return False
             else:
@@ -291,14 +316,14 @@ class RSS(commands.Cog):
         else:
             return True
 
-    async def _check_feed_existing(self, ctx, feed_name: str, channel: discord.TextChannel):
+    async def _check_feed_existing(self, ctx, feed_name: str, channel: GuildMessageable):
         """Helper for rss functions."""
         rss_feed = await self.config.channel(channel).feeds.get_raw(feed_name, default=None)
         if not rss_feed:
             return False
         return True
 
-    async def _delete_feed(self, ctx, feed_name: str, channel: discord.TextChannel):
+    async def _delete_feed(self, ctx, feed_name: str, channel: GuildMessageable):
         """Helper for rss delete."""
         rss_exists = await self._check_feed_existing(ctx, feed_name, channel)
 
@@ -308,7 +333,7 @@ class RSS(commands.Cog):
                 return True
         return False
 
-    async def _edit_template(self, ctx, feed_name: str, channel: discord.TextChannel, template: str):
+    async def _edit_template(self, ctx, feed_name: str, channel: GuildMessageable, template: str):
         """Helper for rss template."""
         rss_exists = await self._check_feed_existing(ctx, feed_name, channel)
 
@@ -337,9 +362,6 @@ class RSS(commands.Cog):
             else:
                 return None
 
-        if len(website.split(".")) < 3:
-            return None
-
         return website
 
     async def _get_channel_object(self, channel_id: int):
@@ -350,11 +372,11 @@ class RSS(commands.Cog):
                 channel = await self.bot.fetch_channel(channel_id)
             except (discord.errors.Forbidden, discord.errors.NotFound):
                 return None
-        if channel and channel.permissions_for(channel.guild.me).send_messages:
+        if channel and can_user_send_messages_in(channel.guild.me, channel):
             return channel
         return None
 
-    async def _get_feed_names(self, channel: discord.TextChannel):
+    async def _get_feed_names(self, channel: GuildMessageable):
         """Helper for rss list/listall."""
         feed_list = []
         space = "\N{SPACE}"
@@ -534,7 +556,7 @@ class RSS(commands.Cog):
 
     async def _update_last_scraped(
         self,
-        channel: discord.TextChannel,
+        channel: GuildMessageable,
         feed_name: str,
         current_feed_title: str,
         current_feed_link: str,
@@ -588,10 +610,12 @@ class RSS(commands.Cog):
             timeout = aiohttp.ClientTimeout(total=20)
             async with aiohttp.ClientSession(headers=self._headers, timeout=timeout) as session:
                 async with session.get(url) as resp:
-                    image = await resp.read()
+                    image = await resp.content.read(261)
             img = io.BytesIO(image)
-            image_test = imghdr.what(img)
-            return image_test
+            file_type = filetype.guess(img)
+            if not file_type:
+                return None
+            return file_type.extension
         except aiohttp.client_exceptions.InvalidURL:
             return None
         except asyncio.exceptions.TimeoutError:
@@ -609,7 +633,7 @@ class RSS(commands.Cog):
         pass
 
     @rss.command(name="add")
-    async def _rss_add(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, url: str):
+    async def _rss_add(self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None, *, url: str):
         """
         Add an RSS feed to a channel.
 
@@ -645,7 +669,7 @@ class RSS(commands.Cog):
 
     @_rss_embed.command(name="color", aliases=["colour"])
     async def _rss_embed_color(
-        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, color: str = None
+        self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None, *, color: str = None
     ):
         """
         Set an embed color for a feed.
@@ -703,7 +727,7 @@ class RSS(commands.Cog):
 
     @_rss_embed.command(name="image")
     async def _rss_embed_image(
-        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, image_tag_name: str = None
+        self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None, image_tag_name: str = None
     ):
         """
         Set a tag to be a large embed image.
@@ -754,7 +778,7 @@ class RSS(commands.Cog):
 
     @_rss_embed.command(name="thumbnail")
     async def _rss_embed_thumbnail(
-        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, thumbnail_tag_name: str = None
+        self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None, thumbnail_tag_name: str = None
     ):
         """
         Set a tag to be a thumbnail image.
@@ -805,7 +829,7 @@ class RSS(commands.Cog):
             )
 
     @_rss_embed.command(name="toggle")
-    async def _rss_embed_toggle(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None):
+    async def _rss_embed_toggle(self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None):
         """
         Toggle whether a feed is sent in an embed or not.
 
@@ -896,7 +920,7 @@ class RSS(commands.Cog):
             await ctx.send("No RSS feeds found in the link provided.")
 
     @rss.command(name="force")
-    async def _rss_force(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None):
+    async def _rss_force(self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None):
         """Forces a feed alert."""
         channel = channel or ctx.channel
         channel_permission_check = await self._check_channel_permissions(ctx, channel)
@@ -919,7 +943,7 @@ class RSS(commands.Cog):
 
     @rss.command(name="limit")
     async def _rss_limit(
-        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, character_limit: int = None
+        self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None, character_limit: int = None
     ):
         """
         Set a character limit for feed posts. Use 0 for unlimited.
@@ -960,7 +984,7 @@ class RSS(commands.Cog):
         await ctx.send(f"{extra_msg}Character limit for {bold(feed_name)} is now {characters} characters.")
 
     @rss.command(name="list")
-    async def _rss_list(self, ctx, channel: discord.TextChannel = None):
+    async def _rss_list(self, ctx, channel: GuildMessageable = None):
         """List saved feeds for this channel or a specific channel."""
         channel = channel or ctx.channel
         channel_permission_check = await self._check_channel_permissions(ctx, channel)
@@ -984,7 +1008,7 @@ class RSS(commands.Cog):
         msg = ""
         for channel_id, data in all_channels.items():
             if channel_id in all_guild_channels:
-                channel_obj = ctx.guild.get_channel(channel_id)
+                channel_obj = ctx.guild.get_channel_or_thread(channel_id)
                 feeds = await self._get_feed_names(channel_obj)
                 if not feeds:
                     continue
@@ -998,7 +1022,7 @@ class RSS(commands.Cog):
             await ctx.send(box(page, lang="ini"))
 
     @rss.command(name="listtags")
-    async def _rss_list_tags(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None):
+    async def _rss_list_tags(self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None):
         """List the tags available from a specific feed."""
         channel = channel or ctx.channel
         channel_permission_check = await self._check_channel_permissions(ctx, channel)
@@ -1048,7 +1072,8 @@ class RSS(commands.Cog):
         msg += "\n\n\t[X] = html | [\\] = dictionary | [-] = list | [ ] = plain text"
         msg += "\n\t[*] = specially-generated tag, may not be present in every post"
 
-        await ctx.send(box(msg, lang="ini"))
+        for msg_part in pagify(msg, delims=["\n\t", "\n\n"]):
+            await ctx.send(box(msg_part, lang="ini"))
 
     @checks.is_owner()
     @rss.group(name="parse")
@@ -1119,7 +1144,7 @@ class RSS(commands.Cog):
             await ctx.send(f"`{website}` isn't in the parsing override list.")
 
     @rss.command(name="remove", aliases=["delete", "del"])
-    async def _rss_remove(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None):
+    async def _rss_remove(self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None):
         """
         Removes a feed from a channel.
 
@@ -1137,7 +1162,7 @@ class RSS(commands.Cog):
             await ctx.send("Feed not found!")
 
     @rss.command(name="showtemplate")
-    async def _rss_show_template(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None):
+    async def _rss_show_template(self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None):
         """Show the template in use for a specific feed."""
         channel = channel or ctx.channel
         channel_permission_check = await self._check_channel_permissions(ctx, channel)
@@ -1200,7 +1225,7 @@ class RSS(commands.Cog):
 
     @_rss_tag.command(name="allow")
     async def _rss_tag_allow(
-        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, tag: str = None
+        self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None, *, tag: str = None
     ):
         """
         Set an allowed tag for a feed to be posted. The tag must match exactly (without regard to title casing).
@@ -1229,7 +1254,7 @@ class RSS(commands.Cog):
         )
 
     @_rss_tag.command(name="allowlist")
-    async def _rss_tag_allowlist(self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None):
+    async def _rss_tag_allowlist(self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None):
         """
         List allowed tags for feed post qualification.
         """
@@ -1251,7 +1276,7 @@ class RSS(commands.Cog):
 
     @_rss_tag.command(name="remove", aliases=["delete"])
     async def _rss_tag_remove(
-        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, tag: str = None
+        self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None, *, tag: str = None
     ):
         """
         Remove a tag from the allow list. The tag must match exactly (without regard to title casing).
@@ -1278,7 +1303,7 @@ class RSS(commands.Cog):
 
     @rss.command(name="template")
     async def _rss_template(
-        self, ctx, feed_name: str, channel: Optional[discord.TextChannel] = None, *, template: str = None
+        self, ctx, feed_name: str, channel: Optional[GuildMessageable] = None, *, template: str = None
     ):
         """
         Set a template for the feed alert.
@@ -1305,7 +1330,7 @@ class RSS(commands.Cog):
         """Show the RSS version."""
         await ctx.send(f"RSS version {__version__}")
 
-    async def get_current_feed(self, channel: discord.TextChannel, name: str, rss_feed: dict, *, force: bool = False):
+    async def get_current_feed(self, channel: GuildMessageable, name: str, rss_feed: dict, *, force: bool = False):
         """Takes an RSS feed and builds an object with all extra tags"""
         log.debug(f"getting feed {name} on cid {channel.id}")
         url = rss_feed["url"]
@@ -1373,33 +1398,42 @@ class RSS(commands.Cog):
                 feedparser_plus_objects.append(feedparser_plus_obj)
                 break
 
-            # if this feed has a published_parsed or an updated_parsed tag, it will use
-            # that time value present in entry_time to verify that the post is new.
+            # TODO: spammy debug logs to vvv
+
+            # there's a post time to compare
             elif (entry_time and last_time) is not None:
-                # now that we are sorting by/saving updated_parsed instead of published_parsed (rss 1.4.0+)
-                # we can post an update for a post that already exists and has already been posted.
-                # this will only work for rss sites that are single-use like cloudflare status, discord status, etc
-                # where an update on the last post should be posted
-                # this can be overridden by a bot owner in the rss parse command, per problematic website
+                # this is a post with an updated time with the same link and title, maybe an edited post.
+                # if a feed is spamming updated times with no content update, consider adding the full website
+                # (www.website.com) to the rss parse command
                 if (last_title == entry_title) and (last_link == entry_link) and (last_time < entry_time):
                     log.debug(f"New update found for an existing post in {name} on cid {channel.id}")
                     feedparser_plus_obj = await self._add_to_feedparser_object(entry, url)
                     feedparser_plus_objects.append(feedparser_plus_obj)
-                # regular feed qualification after this
-                if (last_link != entry_link) and (last_time < entry_time):
-                    log.debug(f"New entry found via time and link validation for feed {name} on cid {channel.id}")
-                    feedparser_plus_obj = await self._add_to_feedparser_object(entry, url)
-                    feedparser_plus_objects.append(feedparser_plus_obj)
-                if (last_title == "" and entry_title == "") and (last_link != entry_link) and (last_time < entry_time):
-                    log.debug(f"New entry found via time validation for feed {name} on cid {channel.id} - no title")
-                    feedparser_plus_obj = await self._add_to_feedparser_object(entry, url)
-                    feedparser_plus_objects.append(feedparser_plus_obj)
+                else:
+                    # a post from the future, or we are caught up
+                    if last_time >= entry_time:
+                        log.debug(f"Up to date on {name} on cid {channel.id}")
+                        break
 
-            # this is a post that has no time information attached to it and we can only
-            # verify that the title and link did not match the previously posted entry
-            elif (entry_time or last_time) is None:
+                    # a new post
+                    if last_link != entry_link:
+                        log.debug(f"New entry found via time and link validation for feed {name} on cid {channel.id}")
+                        feedparser_plus_obj = await self._add_to_feedparser_object(entry, url)
+                        feedparser_plus_objects.append(feedparser_plus_obj)
+
+                    else:
+                        # I don't belive this ever should be hit but this is a catch to debug
+                        # a feed in case one ever appears that does this
+                        log.debug(
+                            f"*** This post qualified via timestamp check but has the same link as last: {entry_title[:25]} | {entry_link}"
+                        )
+
+            # this is a post that has no time comparison information because one or both timestamps are None.
+            # compare the title and link to see if it's the same post as previous.
+            # this may need more definition in the future if there is a feed that provides new titles but not new links etc
+            elif entry_time is None or last_time is None:
                 if last_title == entry_title and last_link == entry_link:
-                    log.debug(f"Breaking rss entry loop for {name} on {channel.id}, via link match")
+                    log.debug(f"Up to date on {name} on {channel.id} via link match, no time to compare")
                     break
                 else:
                     log.debug(f"New entry found for feed {name} on cid {channel.id} via new link or title")
@@ -1413,10 +1447,12 @@ class RSS(commands.Cog):
                 )
                 break
 
-        # nothing in the whole feed matched to what was saved, so let's only post 1 instead of every single post
-        if len(feedparser_plus_objects) == len(sorted_feed_by_post_time):
-            log.debug(f"Couldn't match anything for feed {name} on cid {channel.id}, only posting 1 post")
-            feedparser_plus_objects = [feedparser_plus_objects[0]]
+        #  TODO: just going to keep this here for now in case something explodes later
+
+        #  if len(feedparser_plus_objects) == len(sorted_feed_by_post_time):
+        #      msg = (f"Couldn't match anything for feed {name} on cid {channel.id}, or switching between feed header and feed entry, only posting 1 post")
+        #      log.debug(msg)
+        #      feedparser_plus_objects = [feedparser_plus_objects[0]]
 
         if not feedparser_plus_objects:
             # early-exit so that we don't dispatch when there's no updates
@@ -1462,15 +1498,14 @@ class RSS(commands.Cog):
                 return
 
             embed_toggle = rss_feed["embed"]
-            red_embed_settings = await self.bot.embed_requested(channel, None)
-            embed_permissions = channel.permissions_for(channel.guild.me).embed_links
+            red_embed_settings = await self.bot.embed_requested(channel)
 
             rss_limit = rss_feed.get("limit", 0)
             if rss_limit > 0:
                 # rss_limit needs + 8 characters for pagify counting codeblock characters
                 message = list(pagify(message, delims=["\n", " "], priority=True, page_length=(rss_limit + 8)))[0]
 
-            if embed_toggle and red_embed_settings and embed_permissions:
+            if embed_toggle and red_embed_settings:
                 await self._get_current_feed_embed(channel, rss_feed, feedparser_plus_obj, message)
             else:
                 for page in pagify(message, delims=["\n"]):
@@ -1480,7 +1515,7 @@ class RSS(commands.Cog):
             # This may (and most likely will) get changes in the future
             # so I suggest accepting **kwargs in the listeners using this event.
             #
-            # channel: discord.TextChannel
+            # channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.Thread]
             #     The channel feed alert went to.
             # feed_data: Mapping[str, Any]
             #     Read-only mapping with feed's data.
@@ -1506,7 +1541,7 @@ class RSS(commands.Cog):
         # This may (and most likely will) get changes in the future
         # so I suggest accepting **kwargs in the listeners using this event.
         #
-        # channel: discord.TextChannel
+        # channel: Union[discord.TextChannel, discord.VoiceChannel, discord.StageChannel, discord.Thread]
         #     The channel feed alerts went to.
         # feed_data: Mapping[str, Any]
         #     Read-only mapping with feed's data.
@@ -1529,7 +1564,7 @@ class RSS(commands.Cog):
 
     async def _get_current_feed_embed(
         self,
-        channel: discord.TextChannel,
+        channel: GuildMessageable,
         rss_feed: dict,
         feedparser_plus_obj: feedparser.util.FeedParserDict,
         message: str,
@@ -1541,6 +1576,9 @@ class RSS(commands.Cog):
                 color = int(rss_feed["embed_color"], 16)
                 embed.color = discord.Color(color)
             embed_list.append(embed)
+
+        if len(embed_list) == 0:
+            return
 
         # Add published timestamp to the last footer if it exists
         time_tags = ["updated_parsed_datetime", "published_parsed_datetime"]
@@ -1583,6 +1621,8 @@ class RSS(commands.Cog):
         await self.bot.wait_until_red_ready()
         await self._put_feeds_in_queue()
         self._post_queue_size = self._post_queue.qsize()
+
+        # TODO: very large queues with a lot of RSS feeds (1000+) cause this to fall behind
         while True:
             try:
                 queue_item = await self._get_next_in_queue()
